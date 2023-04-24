@@ -1,5 +1,5 @@
-#Made By Damir Zababuryn
-#04/23/2023
+# 4/24/2023
+#Damir Zababuryn
 import os
 import subprocess
 import re
@@ -30,8 +30,10 @@ class pingRange(QObject):
             self.lifeline = re.compile(r"Received = (\d)")
         # else linux or macos
         else:
+            self.timeout = re.compile(r"Request timeout")
             self.unreachable = re.compile(r"Unreachable.")
             self.lifeline = re.compile(r"(\d) received")
+            self.lifeline1 = re.compile(r"(\d)")
 
     def pingOne(self, ip):
 
@@ -58,14 +60,18 @@ class pingRange(QObject):
 
         # convert byte array returned into a string
         line = output.decode('utf-8')
-
+        print("line:", line)
         if not line:
             print("No result line string")
             iGot = ["0"]  # unreachable
         elif len(re.findall(self.unreachable, line)) > 0:
             iGot = ["0"]  # unreachable
-        else:
+        elif len(re.findall(self.timeout, line)) > 0:
+            iGot = ["0"]  # timeout macos
+        elif len(re.findall(self.lifeline, line)) > 0:
             iGot = re.findall(self.lifeline, line)  # search line string for # in results
+        else:  # macos reply
+            iGot = re.findall(self.lifeline1, line)
 
         if iGot:
             return int(iGot[0])  # return status of host just pinged
@@ -103,7 +109,7 @@ class MyForm(QMainWindow):
         self.show()
 
     def run_scan1(self):
-        self.obj1 = pingRange('152.41.201', 1, 100)
+        self.obj1 = pingRange('152.41.205', 2, 10)
         self.obj1.dataSignal.connect(self.obtain_results1)  # connect signal to data collection method
         self.objThread1 = QThread()
         self.obj1.moveToThread(self.objThread1)
@@ -113,7 +119,7 @@ class MyForm(QMainWindow):
         self.objThread1.start()
 
     def run_scan2(self):
-        self.obj2 = pingRange('152.41.201', 101, 200)
+        self.obj2 = pingRange('152.41.205', 11, 20)
         self.obj2.dataSignal.connect(self.obtain_results2)  # connect signal to data collection method
         self.objThread2 = QThread()
         self.obj2.moveToThread(self.objThread2)
